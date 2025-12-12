@@ -55,6 +55,14 @@ export const bookingsAPI = {
   updateStatus: (id, data) => api.patch(`/bookings/${id}/status`, data),
   cancel: (id) => api.patch(`/bookings/${id}/cancel`),
   addReview: (id, data) => api.post(`/bookings/${id}/review`, data),
+  createRecurring: (data) => api.post('/bookings-enhanced/recurring', data),
+  updateETA: (id, data) => api.patch(`/bookings-enhanced/${id}/eta`, data),
+  markArrived: (id) => api.patch(`/bookings-enhanced/${id}/arrived`),
+  uploadCompletionPhotos: (id, data) => api.post(`/bookings-enhanced/${id}/completion-photos`, data),
+  getCompletionPhotos: (id) => api.get(`/bookings-enhanced/${id}/completion-photos`),
+  completeBooking: (id, data) => api.patch(`/bookings-enhanced/${id}/complete`, data),
+  getBookingTimeline: (id) => api.get(`/bookings-enhanced/${id}/timeline`),
+  getUpcomingRecurringBookings: (params) => api.get('/bookings-enhanced/recurring/upcoming', { params }),
 };
 
 export const paymentsAPI = {
