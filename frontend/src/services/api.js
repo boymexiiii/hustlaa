@@ -123,4 +123,13 @@ export const notificationsAPI = {
   unsubscribeFromPush: (data) => api.post('/notifications/push/unsubscribe', data),
 };
 
+export const reviewsAPI = {
+  getArtisanReviews: (artisanId, params) => api.get(`/reviews/artisan/${artisanId}`, { params }),
+  getReviewById: (id) => api.get(`/reviews/${id}`),
+  voteOnReview: (id, data) => api.post(`/reviews/${id}/vote`, data),
+  addReviewResponse: (id, data) => api.post(`/reviews/${id}/response`, data),
+  deleteReviewResponse: (id) => api.delete(`/reviews/${id}/response`),
+  getReviewStats: (artisanId) => api.get(`/reviews/stats/${artisanId}`),
+};
+
 export default api;
