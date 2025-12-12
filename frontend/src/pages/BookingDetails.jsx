@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, DollarSign, Star, Phone } from 'lucide-react';
 import { bookingsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import BookingTimeline from '../components/BookingTimeline';
 import toast from 'react-hot-toast';
 
 const BookingDetails = () => {
@@ -268,6 +269,8 @@ const BookingDetails = () => {
             </div>
           </div>
         </div>
+
+        <BookingTimeline bookingId={id} />
       </div>
 
       {showReviewModal && (

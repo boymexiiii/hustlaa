@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Phone, Calendar, DollarSign } from 'lucide-react';
 import { artisansAPI, bookingsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import PortfolioGallery from '../components/PortfolioGallery';
+import CertificationsSection from '../components/CertificationsSection';
+import ReviewsSection from '../components/ReviewsSection';
 import toast from 'react-hot-toast';
 
 const ArtisanProfile = () => {
@@ -88,6 +91,14 @@ const ArtisanProfile = () => {
       </div>
     );
   }
+
+  const artisanProfileId = artisan.artisan_id || artisan.id || id;
+  const isOwner = Boolean(
+    user &&
+      user.user_type === 'artisan' &&
+      (artisan.user_id === user.id || artisan.id === user.id)
+  );
+  const isArtisan = Boolean(user && user.user_type === 'artisan');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -199,44 +210,11 @@ const ArtisanProfile = () => {
           </div>
         )}
 
-        {artisan.reviews && artisan.reviews.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Reviews</h2>
-              <div className="space-y-4">
-                {artisan.reviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-200 pb-4 last:border-0">
-                    <div className="flex items-center mb-2">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
-                        {review.first_name?.[0]}{review.last_name?.[0]}
-                      </div>
-                      <div className="ml-3">
-                        <p className="font-medium text-gray-900">
-                          {review.first_name} {review.last_name}
-                        </p>
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    {review.comment && (
-                      <p className="text-gray-600 ml-13">{review.comment}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="space-y-6">
+          <PortfolioGallery artisanId={artisanProfileId} isOwner={isOwner} />
+          <CertificationsSection artisanId={artisanProfileId} isOwner={isOwner} />
+          <ReviewsSection artisanId={artisanProfileId} currentUserId={user?.id} isArtisan={isArtisan && isOwner} />
+        </div>
       </div>
 
       {showBookingModal && (

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, MapPin, Star, Filter, ChevronDown, Navigation, Map } from 'lucide-react';
-import { artisansAPI } from '../services/api';
+import { MapPin, Star, Filter, ChevronDown, Navigation, Map } from 'lucide-react';
+import { artisansAPI, searchAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { getUserLocation, formatDistance, calculateDistance } from '../utils/geolocation';
 import ArtisanMap from '../components/ArtisanMap';
 import LocationSearch from '../components/LocationSearch';
+import AdvancedSearchFilters from '../components/AdvancedSearchFilters';
+import SavedSearches from '../components/SavedSearches';
 import toast from 'react-hot-toast';
 
 const Artisans = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
   const [artisans, setArtisans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState([]);
@@ -18,6 +22,7 @@ const Artisans = () => {
     skill: searchParams.get('skill') || '',
     rating: searchParams.get('rating') || '',
   });
+  const [advancedFilters, setAdvancedFilters] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [nearbyMode, setNearbyMode] = useState(false);
@@ -31,7 +36,7 @@ const Artisans = () => {
 
   useEffect(() => {
     fetchArtisans();
-  }, [filters]);
+  }, [filters, advancedFilters, nearbyMode, userLocation]);
 
   const fetchStates = async () => {
     try {
@@ -54,10 +59,19 @@ const Artisans = () => {
           skill: filters.skill || undefined,
         });
       } else {
-        response = await artisansAPI.getAll(filters);
+        const params = advancedFilters || {
+          state: filters.state || undefined,
+          city: filters.city || undefined,
+          skill: filters.skill || undefined,
+          min_rating: filters.rating || undefined,
+          sort: 'rating',
+        };
+        response = await searchAPI.searchArtisans(params);
       }
       
-      let artisansData = response.data;
+      let artisansData = (nearbyMode && userLocation)
+        ? response.data
+        : response.data.artisans;
       
       // Calculate distance for each artisan if user location is available
       if (userLocation) {
@@ -76,6 +90,18 @@ const Artisans = () => {
       }
       
       setArtisans(artisansData);
+
+      if (!nearbyMode && user && advancedFilters) {
+        try {
+          await searchAPI.addToSearchHistory({
+            search_query: `${advancedFilters.skill || ''} ${advancedFilters.city || ''}`.trim() || null,
+            filters: advancedFilters,
+            results_count: artisansData.length,
+          });
+        } catch (e) {
+          // ignore history failures
+        }
+      }
     } catch (error) {
       toast.error('Failed to fetch artisans');
     } finally {
@@ -90,6 +116,7 @@ const Artisans = () => {
 
   const handleReset = () => {
     setFilters({ state: '', city: '', skill: '', rating: '' });
+    setAdvancedFilters(null);
     setNearbyMode(false);
   };
 
@@ -99,6 +126,7 @@ const Artisans = () => {
       const location = await getUserLocation();
       setUserLocation(location);
       setNearbyMode(true);
+      setAdvancedFilters(null);
       setFilters({ state: '', city: '', skill: filters.skill, rating: '' });
       toast.success('Showing artisans near you');
     } catch (error) {
@@ -111,7 +139,18 @@ const Artisans = () => {
   const handleLocationSelect = (location) => {
     setUserLocation(location);
     setNearbyMode(true);
+    setAdvancedFilters(null);
     setFilters({ state: '', city: '', skill: filters.skill, rating: '' });
+  };
+
+  const handleAdvancedSearch = (newFilters) => {
+    setNearbyMode(false);
+    setAdvancedFilters(newFilters);
+  };
+
+  const handleLoadSavedSearch = (loadedFilters) => {
+    setNearbyMode(false);
+    setAdvancedFilters(loadedFilters);
   };
 
   return (
@@ -153,6 +192,13 @@ const Artisans = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!nearbyMode && (
+          <>
+            {user && <SavedSearches onLoadSearch={handleLoadSavedSearch} />}
+            <AdvancedSearchFilters onSearch={handleAdvancedSearch} />
+          </>
+        )}
+
         {showMap && userLocation && (
           <div className="mb-8">
             <ArtisanMap

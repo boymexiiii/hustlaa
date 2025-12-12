@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { bookingsAPI } from '../services/api';
 
 export default function BookingTimeline({ bookingId }) {
