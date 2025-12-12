@@ -31,6 +31,7 @@ app.use('/upload', require('../routes/upload'));
 app.use('/admin', require('../routes/admin'));
 app.use('/messages', require('../routes/messages').router);
 app.use('/wallet', require('../routes/wallet').router);
+app.use('/notifications', require('../routes/notifications').router);
 
 // Health check
 app.get('/health', (req, res) => {

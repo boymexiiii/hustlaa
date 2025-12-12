@@ -112,4 +112,15 @@ export const walletAPI = {
   payBooking: (data) => api.post('/wallet/pay-booking', data),
 };
 
+export const notificationsAPI = {
+  getNotifications: (params) => api.get('/notifications', { params }),
+  markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch('/notifications/read-all'),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`),
+  getPreferences: () => api.get('/notifications/preferences'),
+  updatePreferences: (data) => api.put('/notifications/preferences', data),
+  subscribeToPush: (data) => api.post('/notifications/push/subscribe', data),
+  unsubscribeFromPush: (data) => api.post('/notifications/push/unsubscribe', data),
+};
+
 export default api;

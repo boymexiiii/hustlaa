@@ -21,6 +21,7 @@ import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import BookingDetails from './pages/BookingDetails';
 import Profile from './pages/Profile';
+import NotificationSettings from './pages/NotificationSettings';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -75,6 +76,7 @@ function AppContent() {
           <Route path="/chat/:bookingId" element={<PrivateRoute><Chat /></PrivateRoute>} />
           <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/notification-settings" element={<PrivateRoute><NotificationSettings /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
         </Routes>
         <Toaster position="top-right" />

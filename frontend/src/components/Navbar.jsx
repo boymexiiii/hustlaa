@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, LayoutDashboard, Calendar } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Calendar, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationCenter from './NotificationCenter';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,16 +45,18 @@ const Navbar = () => {
 
           <div className="hidden md:flex md:items-center md:space-x-4">
             {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 focus:outline-none"
-                >
-                  <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-primary-600" />
-                  </div>
-                  <span className="text-sm font-medium">{user.first_name}</span>
-                </button>
+              <>
+                <NotificationCenter />
+                <div className="relative">
+                  <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 focus:outline-none"
+                  >
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary-600" />
+                    </div>
+                    <span className="text-sm font-medium">{user.first_name}</span>
+                  </button>
 
                 {showDropdown && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
@@ -81,6 +84,14 @@ const Navbar = () => {
                       <Calendar className="w-4 h-4 mr-2" />
                       Bookings
                     </Link>
+                    <Link
+                      to="/notification-settings"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Notifications
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
@@ -90,7 +101,8 @@ const Navbar = () => {
                     </button>
                   </div>
                 )}
-              </div>
+                </div>
+              </>
             ) : (
               <>
                 <Link
