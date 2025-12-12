@@ -132,4 +132,16 @@ export const reviewsAPI = {
   getReviewStats: (artisanId) => api.get(`/reviews/stats/${artisanId}`),
 };
 
+export const portfolioAPI = {
+  getArtisanPortfolio: (artisanId, params) => api.get(`/portfolio/artisan/${artisanId}`, { params }),
+  getPortfolioItem: (id) => api.get(`/portfolio/${id}`),
+  createPortfolioItem: (data) => api.post('/portfolio', data),
+  updatePortfolioItem: (id, data) => api.put(`/portfolio/${id}`, data),
+  deletePortfolioItem: (id) => api.delete(`/portfolio/${id}`),
+  getArtisanCertifications: (artisanId) => api.get(`/portfolio/certifications/${artisanId}`),
+  addCertification: (data) => api.post('/portfolio/certifications', data),
+  updateCertification: (id, data) => api.put(`/portfolio/certifications/${id}`, data),
+  deleteCertification: (id) => api.delete(`/portfolio/certifications/${id}`),
+};
+
 export default api;
