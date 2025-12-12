@@ -127,4 +127,10 @@ httpServer.listen(PORT, HOST, () => {
   console.log(`Server running on ${HOST}:${PORT}`);
 });
 
-module.exports = { app, pool, io };
+// Export for Vercel serverless
+module.exports = app;
+
+// Also export for local development
+module.exports.app = app;
+module.exports.pool = pool;
+module.exports.io = io;
