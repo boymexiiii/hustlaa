@@ -1,0 +1,31 @@
+{
+  "name": "hustlaa-backend",
+  "version": "1.0.0",
+  "description": "Artisan platform backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.10.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "stripe": "^13.0.0",
+    "axios": "^1.6.0",
+    "paystack": "^1.0.0",
+    "nodemailer": "^6.9.8",
+    "socket.io": "^4.7.5",
+    "sharp": "^0.32.0",
+    "uuid": "^9.0.0",
+    "sqlite3": "^5.1.7",
+    "better-sqlite3": "^12.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

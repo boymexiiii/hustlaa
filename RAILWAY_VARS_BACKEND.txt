@@ -1,0 +1,13 @@
+NODE_ENV=production
+PORT=5000
+DATABASE_URL=postgresql://postgres:zZWZLFllrGjddZAMgBdQZsJATwJJCdeN@maglev.proxy.rlwy.net:36683/railway
+JWT_SECRET=hustlaa_jwt_secret_key_2024_production_secure_key_minimum_32_chars
+FRONTEND_URL=https://hustlaa-frontend-production.up.railway.app
+PAYSTACK_SECRET_KEY=sk_test_placeholder
+PAYSTACK_PUBLIC_KEY=pk_test_placeholder
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+SMTP_FROM=Hustlaa <no-reply@hustlaa.com>
+ADMIN_EMAILS=admin@hustlaa.com
