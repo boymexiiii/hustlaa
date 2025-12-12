@@ -35,6 +35,7 @@ app.use('/notifications', require('../routes/notifications').router);
 app.use('/reviews', require('../routes/reviews'));
 app.use('/portfolio', require('../routes/portfolio'));
 app.use('/bookings-enhanced', require('../routes/booking-enhancements'));
+app.use('/search', require('../routes/search'));
 
 // Health check
 app.get('/health', (req, res) => {

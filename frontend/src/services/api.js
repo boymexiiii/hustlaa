@@ -152,4 +152,15 @@ export const portfolioAPI = {
   deleteCertification: (id) => api.delete(`/portfolio/certifications/${id}`),
 };
 
+export const searchAPI = {
+  searchArtisans: (params) => api.get('/search/artisans', { params }),
+  saveSearch: (data) => api.post('/search/saved', data),
+  getSavedSearches: () => api.get('/search/saved'),
+  deleteSavedSearch: (id) => api.delete(`/search/saved/${id}`),
+  getSearchHistory: (params) => api.get('/search/history', { params }),
+  addToSearchHistory: (data) => api.post('/search/history', data),
+  getServiceCategories: () => api.get('/search/categories'),
+  getArtisanStates: () => api.get('/artisans/meta/states'),
+};
+
 export default api;
