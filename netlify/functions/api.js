@@ -10,22 +10,31 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', require('../../backend/routes/auth'));
-app.use('/api/artisans', require('../../backend/routes/artisans'));
-app.use('/api/bookings', require('../../backend/routes/bookings'));
-app.use('/api/payments', require('../../backend/routes/payments'));
-app.use('/api/jobs', require('../../backend/routes/jobs'));
-app.use('/api/search', require('../../backend/routes/search'));
-app.use('/api/users', require('../../backend/routes/users'));
-app.use('/api/upload', require('../../backend/routes/upload'));
-app.use('/api/admin', require('../../backend/routes/admin'));
-app.use('/api/messages', require('../../backend/routes/messages').router);
-app.use('/api/wallet', require('../../backend/routes/wallet').router);
-app.use('/api/notifications', require('../../backend/routes/notifications').router);
+try {
+  app.use('/auth', require('../../backend/routes/auth'));
+  app.use('/artisans', require('../../backend/routes/artisans'));
+  app.use('/bookings', require('../../backend/routes/bookings'));
+  app.use('/payments', require('../../backend/routes/payments'));
+  app.use('/jobs', require('../../backend/routes/jobs'));
+  app.use('/search', require('../../backend/routes/search'));
+  app.use('/users', require('../../backend/routes/users'));
+  app.use('/upload', require('../../backend/routes/upload'));
+  app.use('/admin', require('../../backend/routes/admin'));
+  app.use('/messages', require('../../backend/routes/messages').router);
+  app.use('/wallet', require('../../backend/routes/wallet').router);
+  app.use('/notifications', require('../../backend/routes/notifications').router);
+} catch (error) {
+  console.error('Error loading routes:', error);
+}
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'OK' });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'Hustlaa API' });
 });
 
 // Error handling middleware
