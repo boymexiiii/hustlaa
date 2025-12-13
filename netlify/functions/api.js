@@ -32,6 +32,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK' });
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK' });
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({ message: 'Hustlaa API' });
