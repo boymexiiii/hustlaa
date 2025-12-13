@@ -1,9 +1,25 @@
 const express = require('express');
-const { Pool } = require('pg');
 const { authMiddleware, artisanMiddleware, customerMiddleware } = require('../middleware/auth');
+const { createNotification } = require('./notifications');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function getBookingPartyUserIds(bookingId) {
+  const r = await pool.query(
+    `SELECT b.id,
+             b.customer_id,
+             s.name AS service_name,
+             au.id AS artisan_user_id
+      FROM bookings b
+      JOIN services s ON b.service_id = s.id
+      JOIN artisan_profiles ap ON b.artisan_id = ap.id
+      JOIN users au ON ap.user_id = au.id
+      WHERE b.id = $1`,
+    [bookingId]
+  );
+  return r.rows[0] || null;
+}
 
 // Create recurring booking
 router.post('/recurring', authMiddleware, customerMiddleware, async (req, res) => {
@@ -70,6 +86,18 @@ router.patch('/:id/eta', authMiddleware, artisanMiddleware, async (req, res) => 
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    const parties = await getBookingPartyUserIds(id);
+    if (parties) {
+      await createNotification(
+        parties.customer_id,
+        'booking',
+        'ETA updated',
+        `The artisan updated ETA for ${parties.service_name}.`,
+        parties.id,
+        'booking'
+      );
+    }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error(error);
@@ -100,6 +128,18 @@ router.patch('/:id/arrived', authMiddleware, artisanMiddleware, async (req, res)
        VALUES ($1, $2, $3, $4)`,
       [id, 'started', 'Artisan arrived at location', req.user.id]
     );
+
+    const parties = await getBookingPartyUserIds(id);
+    if (parties) {
+      await createNotification(
+        parties.customer_id,
+        'booking',
+        'Artisan arrived',
+        `The artisan has arrived for ${parties.service_name}.`,
+        parties.id,
+        'booking'
+      );
+    }
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -140,28 +180,20 @@ router.post('/:id/completion-photos', authMiddleware, async (req, res) => {
       photos.push(result.rows[0]);
     }
 
+    const parties = await getBookingPartyUserIds(id);
+    if (parties) {
+      const receiverId = req.user.id === parties.customer_id ? parties.artisan_user_id : parties.customer_id;
+      await createNotification(
+        receiverId,
+        'booking',
+        'Completion photos added',
+        `New completion photos were added for ${parties.service_name}.`,
+        parties.id,
+        'booking'
+      );
+    }
+
     res.status(201).json(photos);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get completion photos
-router.get('/:id/completion-photos', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const result = await pool.query(
-      `SELECT bcp.*, u.first_name, u.last_name, u.profile_image_url
-       FROM booking_completion_photos bcp
-       JOIN users u ON bcp.uploaded_by = u.id
-       WHERE bcp.booking_id = $1
-       ORDER BY bcp.created_at DESC`,
-      [id]
-    );
-
-    res.json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -192,6 +224,18 @@ router.patch('/:id/complete', authMiddleware, artisanMiddleware, async (req, res
        VALUES ($1, $2, $3, $4)`,
       [id, 'completed', 'Booking completed', req.user.id]
     );
+
+    const parties = await getBookingPartyUserIds(id);
+    if (parties) {
+      await createNotification(
+        parties.customer_id,
+        'booking',
+        'Booking completed',
+        `Your booking for ${parties.service_name} has been marked as completed.`,
+        parties.id,
+        'booking'
+      );
+    }
 
     res.json(result.rows[0]);
   } catch (error) {

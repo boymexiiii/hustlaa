@@ -1,9 +1,8 @@
 const express = require('express');
-const { Pool } = require('pg');
 const { authMiddleware } = require('../middleware/auth');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Admin middleware - check if user is admin
 const adminMiddleware = async (req, res, next) => {

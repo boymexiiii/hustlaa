@@ -1,9 +1,8 @@
 const express = require('express');
-const { Pool } = require('pg');
 const { authMiddleware } = require('../middleware/auth');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function getArtisanProfileIdForUser(userId) {
   const r = await pool.query('SELECT id FROM artisan_profiles WHERE user_id = $1', [userId]);

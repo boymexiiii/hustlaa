@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, HelpCircle, Users, Briefcase, Shield, Phone, Mail } from 'lucide-react';
+import Footer from '../components/Footer';
 
 const Help = () => {
   const [openFaq, setOpenFaq] = useState(null);
@@ -189,6 +190,7 @@ const Help = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

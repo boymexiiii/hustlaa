@@ -2,16 +2,23 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
-const { Pool } = require('pg');
 
 dotenv.config();
 
 const app = express();
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const pool = require('../db/pool');
 
 app.use(cors());
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const path = req.originalUrl || req.url;
+    console.log(`[api] ${req.method} ${path} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
 
 // Paystack webhook requires raw request body for signature verification
 app.use('/payments/webhook/paystack', express.raw({ type: 'application/json' }));
@@ -26,6 +33,7 @@ app.use('/auth', require('../routes/auth'));
 app.use('/artisans', require('../routes/artisans'));
 app.use('/bookings', require('../routes/bookings'));
 app.use('/payments', require('../routes/payments'));
+app.use('/jobs', require('../routes/jobs'));
 app.use('/users', require('../routes/users'));
 app.use('/upload', require('../routes/upload'));
 app.use('/admin', require('../routes/admin'));
@@ -44,7 +52,8 @@ app.get('/health', (req, res) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error(err);
+  const path = req.originalUrl || req.url;
+  console.error(`[api] error ${req.method} ${path}`, err);
   res.status(500).json({ error: 'Internal server error' });
 });
 

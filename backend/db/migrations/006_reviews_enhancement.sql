@@ -10,10 +10,11 @@ CREATE TABLE IF NOT EXISTS review_votes (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   vote_type VARCHAR(20) NOT NULL, -- 'helpful' or 'unhelpful'
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(review_id, user_id),
-  INDEX idx_review_id (review_id),
-  INDEX idx_user_id (user_id)
+  UNIQUE(review_id, user_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_review_votes_review_id ON review_votes(review_id);
+CREATE INDEX IF NOT EXISTS idx_review_votes_user_id ON review_votes(user_id);
 
 -- Create review_responses table for artisan responses to reviews
 CREATE TABLE IF NOT EXISTS review_responses (
@@ -22,7 +23,8 @@ CREATE TABLE IF NOT EXISTS review_responses (
   artisan_id INTEGER NOT NULL REFERENCES artisan_profiles(id) ON DELETE CASCADE,
   response_text TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_review_id (review_id),
-  INDEX idx_artisan_id (artisan_id)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_review_responses_review_id ON review_responses(review_id);
+CREATE INDEX IF NOT EXISTS idx_review_responses_artisan_id ON review_responses(artisan_id);

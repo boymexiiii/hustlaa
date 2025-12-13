@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, MapPin, Clock, DollarSign, Calendar, TrendingUp } from 'lucide-react';
-import { bookingsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { jobsAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import Footer from '../components/Footer';
 
 const Jobs = () => {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -16,87 +19,63 @@ const Jobs = () => {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      // Simulated job data - in production, this would come from an API
-      const mockJobs = [
-        {
-          id: 1,
-          title: 'Residential Electrical Installation',
-          category: 'Electrician',
-          location: 'Lekki, Lagos',
-          budget: '50,000 - 80,000',
-          duration: '2-3 days',
-          postedDate: '2 hours ago',
-          description: 'Need a certified electrician for complete house wiring installation.',
-          status: 'open',
-          applicants: 5
-        },
-        {
-          id: 2,
-          title: 'Kitchen Plumbing Repair',
-          category: 'Plumber',
-          location: 'Wuse, Abuja',
-          budget: '15,000 - 25,000',
-          duration: '1 day',
-          postedDate: '5 hours ago',
-          description: 'Fix leaking pipes and install new kitchen sink.',
-          status: 'open',
-          applicants: 8
-        },
-        {
-          id: 3,
-          title: 'Custom Furniture Design',
-          category: 'Carpenter',
-          location: 'Ikeja, Lagos',
-          budget: '100,000 - 150,000',
-          duration: '1 week',
-          postedDate: '1 day ago',
-          description: 'Design and build custom wardrobes for 3 bedrooms.',
-          status: 'open',
-          applicants: 12
-        },
-        {
-          id: 4,
-          title: 'Office Building Renovation',
-          category: 'Contractor',
-          location: 'Victoria Island, Lagos',
-          budget: '500,000+',
-          duration: '2 weeks',
-          postedDate: '3 days ago',
-          description: 'Complete renovation of 2-floor office building.',
-          status: 'open',
-          applicants: 15
-        },
-        {
-          id: 5,
-          title: 'Home AC Installation',
-          category: 'Electrician',
-          location: 'Garki, Abuja',
-          budget: '40,000 - 60,000',
-          duration: '1 day',
-          postedDate: '1 week ago',
-          description: 'Install 3 split AC units in residential apartment.',
-          status: 'open',
-          applicants: 6
-        },
-        {
-          id: 6,
-          title: 'Bathroom Tiling',
-          category: 'Tiler',
-          location: 'Surulere, Lagos',
-          budget: '30,000 - 45,000',
-          duration: '2 days',
-          postedDate: '4 days ago',
-          description: 'Professional tiling for master bathroom.',
-          status: 'open',
-          applicants: 9
-        }
-      ];
+      const params = { status: 'open' };
+      if (filter && filter !== 'all') {
+        params.category = filter;
+      }
 
-      setJobs(mockJobs);
+      const response = await jobsAPI.list(params);
+
+      const normalized = (response.data || []).map((j) => {
+        const budgetMin = j.budget_min !== null && j.budget_min !== undefined ? Number(j.budget_min) : null;
+        const budgetMax = j.budget_max !== null && j.budget_max !== undefined ? Number(j.budget_max) : null;
+
+        let budget = 'Negotiable';
+        if (budgetMin !== null && budgetMax !== null) budget = `${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()}`;
+        else if (budgetMin !== null) budget = `${budgetMin.toLocaleString()}+`;
+        else if (budgetMax !== null) budget = `Up to ${budgetMax.toLocaleString()}`;
+
+        const location = j.address || [j.city, j.state].filter(Boolean).join(', ');
+
+        return {
+          id: j.id,
+          title: j.title,
+          category: j.category,
+          location: location || 'Nigeria',
+          budget,
+          duration: 'Flexible',
+          postedDate: j.created_at ? new Date(j.created_at).toLocaleDateString() : '',
+          description: j.description,
+          status: j.status,
+          applicants: Number(j.applications_count || 0),
+        };
+      });
+
+      setJobs(normalized);
     } catch (error) {
       toast.error('Failed to fetch jobs');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApply = async (jobId) => {
+    if (!user) {
+      toast.error('Please login as an artisan to apply');
+      return;
+    }
+
+    if (user.user_type !== 'artisan') {
+      toast.error('Only artisans can apply to jobs');
+      return;
+    }
+
+    try {
+      await jobsAPI.apply(jobId, { cover_letter: '' });
+      toast.success('Application submitted');
+      fetchJobs();
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'Failed to apply');
     }
   };
 
@@ -145,7 +124,9 @@ const Jobs = () => {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{job.title}</h3>
+                        <Link to={`/jobs/${job.id}`} className="text-xl font-bold text-gray-900 mb-2 hover:text-primary-600 block">
+                          {job.title}
+                        </Link>
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
                           <div className="flex items-center gap-1">
                             <Briefcase className="w-4 h-4" />
@@ -177,7 +158,10 @@ const Jobs = () => {
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                       <span className="text-sm text-gray-500">Posted {job.postedDate}</span>
-                      <button className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 font-semibold transition-all">
+                      <button
+                        onClick={() => handleApply(job.id)}
+                        className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 font-semibold transition-all"
+                      >
                         Apply Now
                       </button>
                     </div>
@@ -227,7 +211,7 @@ const Jobs = () => {
               </div>
 
               <Link
-                to="/register"
+                to={user ? '/jobs/new' : '/login'}
                 className="mt-6 w-full block text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-all"
               >
                 Post a Job
@@ -236,6 +220,7 @@ const Jobs = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

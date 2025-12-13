@@ -14,9 +14,22 @@ const BookingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
+  const [showEtaModal, setShowEtaModal] = useState(false);
+  const [etaValue, setEtaValue] = useState('');
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [showPhotosModal, setShowPhotosModal] = useState(false);
+  const [photoUrlsText, setPhotoUrlsText] = useState('');
+  const [completionPhotos, setCompletionPhotos] = useState([]);
 
   useEffect(() => {
     fetchBooking();
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchCompletionPhotos();
+    }
   }, [id]);
 
   const fetchBooking = async () => {
@@ -28,6 +41,15 @@ const BookingDetails = () => {
       navigate('/bookings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompletionPhotos = async () => {
+    try {
+      const response = await bookingsAPI.getCompletionPhotos(id);
+      setCompletionPhotos(response.data || []);
+    } catch (error) {
+      // ignore
     }
   };
 
@@ -65,6 +87,69 @@ const BookingDetails = () => {
     }
   };
 
+  const handleUpdateEta = async (e) => {
+    e.preventDefault();
+    if (!etaValue) {
+      toast.error('Please select an ETA');
+      return;
+    }
+    try {
+      await bookingsAPI.updateETA(id, { estimated_arrival_time: etaValue });
+      toast.success('ETA updated');
+      setShowEtaModal(false);
+      setEtaValue('');
+      fetchBooking();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to update ETA');
+    }
+  };
+
+  const handleMarkArrived = async () => {
+    try {
+      await bookingsAPI.markArrived(id);
+      toast.success('Marked as arrived');
+      fetchBooking();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to mark arrived');
+    }
+  };
+
+  const handleUploadCompletionPhotos = async (e) => {
+    e.preventDefault();
+    const urls = photoUrlsText
+      .split(/\n|,/) 
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (urls.length === 0) {
+      toast.error('Add at least one photo URL');
+      return;
+    }
+
+    try {
+      await bookingsAPI.uploadCompletionPhotos(id, { photo_urls: urls });
+      toast.success('Photos uploaded');
+      setShowPhotosModal(false);
+      setPhotoUrlsText('');
+      fetchCompletionPhotos();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to upload photos');
+    }
+  };
+
+  const handleCompleteWithNotes = async (e) => {
+    e.preventDefault();
+    try {
+      await bookingsAPI.completeBooking(id, { completion_notes: completionNotes });
+      toast.success('Booking completed');
+      setShowCompleteModal(false);
+      setCompletionNotes('');
+      fetchBooking();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to complete booking');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -90,8 +175,13 @@ const BookingDetails = () => {
   }
 
   const isCustomer = user?.user_type === 'customer';
+  const isArtisan = user?.user_type === 'artisan';
   const canCancel = isCustomer && ['pending', 'confirmed'].includes(booking.status);
   const canReview = isCustomer && booking.status === 'completed';
+  const canUpdateEta = isArtisan && ['confirmed', 'in_progress'].includes(booking.status);
+  const canMarkArrived = isArtisan && booking.status === 'confirmed';
+  const canUploadPhotos = !isCustomer && ['in_progress', 'completed'].includes(booking.status);
+  const canCompleteEnhanced = isArtisan && booking.status === 'in_progress';
 
   const getStatusColor = (status) => {
     const colors = {
@@ -141,6 +231,27 @@ const BookingDetails = () => {
                   <p className="text-2xl font-bold text-primary-600">₦{booking.total_amount}</p>
                 </div>
               </div>
+
+              {(booking.estimated_arrival_time || booking.actual_arrival_time) && (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {booking.estimated_arrival_time && (
+                    <div className="text-sm text-gray-700">
+                      <p className="text-sm text-gray-600">ETA</p>
+                      <p className="font-medium">
+                        {new Date(booking.estimated_arrival_time).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {booking.actual_arrival_time && (
+                    <div className="text-sm text-gray-700">
+                      <p className="text-sm text-gray-600">Arrived</p>
+                      <p className="font-medium">
+                        {new Date(booking.actual_arrival_time).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="border-t border-gray-200 pt-6 mt-6">
@@ -225,6 +336,42 @@ const BookingDetails = () => {
                 >
                   Open Chat
                 </button>
+
+                {canUpdateEta && (
+                  <button
+                    onClick={() => setShowEtaModal(true)}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  >
+                    Update ETA
+                  </button>
+                )}
+
+                {canMarkArrived && (
+                  <button
+                    onClick={handleMarkArrived}
+                    className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    Mark Arrived
+                  </button>
+                )}
+
+                {canUploadPhotos && (
+                  <button
+                    onClick={() => setShowPhotosModal(true)}
+                    className="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
+                  >
+                    Add Completion Photos
+                  </button>
+                )}
+
+                {canCompleteEnhanced && (
+                  <button
+                    onClick={() => setShowCompleteModal(true)}
+                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Complete (with notes)
+                  </button>
+                )}
                 {!isCustomer && booking.status === 'pending' && (
                   <button
                     onClick={() => handleUpdateStatus('confirmed')}
@@ -267,6 +414,37 @@ const BookingDetails = () => {
                 )}
               </div>
             </div>
+
+            {(booking.completion_notes || completionPhotos.length > 0) && (
+              <div className="border-t border-gray-200 pt-6 mt-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Completion</h2>
+                {booking.completion_notes && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600">Notes</p>
+                    <p className="text-gray-900">{booking.completion_notes}</p>
+                  </div>
+                )}
+
+                {completionPhotos.length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Photos</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {completionPhotos.map((p) => (
+                        <a
+                          key={p.id}
+                          href={p.photo_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block border border-gray-200 rounded-lg overflow-hidden"
+                        >
+                          <img src={p.photo_url} alt="Completion" className="w-full h-28 object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -325,6 +503,102 @@ const BookingDetails = () => {
                 <button
                   type="button"
                   onClick={() => setShowReviewModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEtaModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Update ETA</h2>
+            <form onSubmit={handleUpdateEta}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Estimated arrival time</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={etaValue}
+                  onChange={(e) => setEtaValue(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div className="flex gap-4">
+                <button type="submit" className="flex-1 bg-primary-600 text-white py-2 rounded-md hover:bg-primary-700">
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowEtaModal(false); setEtaValue(''); }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPhotosModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Add Completion Photos</h2>
+            <form onSubmit={handleUploadCompletionPhotos}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Photo URLs (one per line)</label>
+                <textarea
+                  rows="4"
+                  value={photoUrlsText}
+                  onChange={(e) => setPhotoUrlsText(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="https://...\nhttps://..."
+                />
+              </div>
+              <div className="flex gap-4">
+                <button type="submit" className="flex-1 bg-primary-600 text-white py-2 rounded-md hover:bg-primary-700">
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowPhotosModal(false); setPhotoUrlsText(''); }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showCompleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete Booking</h2>
+            <form onSubmit={handleCompleteWithNotes}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Completion notes</label>
+                <textarea
+                  rows="4"
+                  value={completionNotes}
+                  onChange={(e) => setCompletionNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="What was done? Any issues?"
+                />
+              </div>
+              <div className="flex gap-4">
+                <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
+                  Complete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowCompleteModal(false); setCompletionNotes(''); }}
                   className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
                 >
                   Cancel

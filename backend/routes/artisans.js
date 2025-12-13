@@ -1,9 +1,8 @@
 const express = require('express');
-const { Pool } = require('pg');
 const { authMiddleware, artisanMiddleware } = require('../middleware/auth');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Nigerian states for validation
 const NIGERIAN_STATES = [
@@ -248,9 +247,9 @@ router.get('/search/nearby', async (req, res) => {
       params.push(skill);
     }
 
-    query += ` HAVING (6371 * acos(cos(radians($1)) * cos(radians(al.latitude)) * 
-               cos(radians(al.longitude) - radians($2)) + 
-               sin(radians($1)) * sin(radians(al.latitude)))) < $${paramCount + 1}`;
+    query += ` AND (6371 * acos(cos(radians($1)) * cos(radians(al.latitude)) * 
+              cos(radians(al.longitude) - radians($2)) + 
+              sin(radians($1)) * sin(radians(al.latitude)))) < $${paramCount + 1}`;
     params.push(parseFloat(radius_km));
 
     query += ` ORDER BY distance_km ASC LIMIT 50`;

@@ -22,6 +22,10 @@ import Bookings from './pages/Bookings';
 import BookingDetails from './pages/BookingDetails';
 import Profile from './pages/Profile';
 import NotificationSettings from './pages/NotificationSettings';
+import PostJob from './pages/PostJob';
+import JobDetails from './pages/JobDetails';
+import MyJobs from './pages/MyJobs';
+import MyApplications from './pages/MyApplications';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -61,6 +65,10 @@ function AppContent() {
           <Route path="/search" element={<ArtisanSearch />} />
           <Route path="/artisans" element={<Artisans />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/:id" element={<JobDetails />} />
+          <Route path="/jobs/new" element={<PrivateRoute><PostJob /></PrivateRoute>} />
+          <Route path="/jobs/my" element={<PrivateRoute><MyJobs /></PrivateRoute>} />
+          <Route path="/jobs/my-applications" element={<PrivateRoute><MyApplications /></PrivateRoute>} />
           <Route path="/help" element={<Help />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/artisan/:id" element={<ArtisanProfile />} />

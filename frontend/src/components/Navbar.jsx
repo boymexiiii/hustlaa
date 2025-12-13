@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, LayoutDashboard, Calendar, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Calendar, Settings, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import NotificationCenter from './NotificationCenter';
 
@@ -84,6 +84,26 @@ const Navbar = () => {
                       <Calendar className="w-4 h-4 mr-2" />
                       Bookings
                     </Link>
+                    {user?.user_type === 'customer' && (
+                      <Link
+                        to="/jobs/my"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowDropdown(false)}
+                      >
+                        <Briefcase className="w-4 h-4 mr-2" />
+                        My Jobs
+                      </Link>
+                    )}
+                    {user?.user_type === 'artisan' && (
+                      <Link
+                        to="/jobs/my-applications"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowDropdown(false)}
+                      >
+                        <Briefcase className="w-4 h-4 mr-2" />
+                        My Applications
+                      </Link>
+                    )}
                     <Link
                       to="/notification-settings"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

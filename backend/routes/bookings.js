@@ -1,23 +1,39 @@
 const express = require('express');
-const { Pool } = require('pg');
 const { authMiddleware, artisanMiddleware, customerMiddleware } = require('../middleware/auth');
 const { sendEmail, bookingEmailTemplate } = require('../utils/mailer');
+const { createNotification } = require('./notifications');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function getBookingPartyUserIds(bookingId) {
+  const r = await pool.query(
+    `SELECT b.id,
+            b.customer_id,
+            s.name AS service_name,
+            au.id AS artisan_user_id
+     FROM bookings b
+     JOIN services s ON b.service_id = s.id
+     JOIN artisan_profiles ap ON b.artisan_id = ap.id
+     JOIN users au ON ap.user_id = au.id
+     WHERE b.id = $1`,
+    [bookingId]
+  );
+  return r.rows[0] || null;
+}
 
 async function sendBookingEmailToParties({ bookingId, title, intro }) {
   const r = await pool.query(
     `SELECT b.id, b.booking_date, b.booking_time, b.location_address, b.total_amount,
             s.name as service_name,
             cu.email as customer_email, cu.first_name as customer_first_name,
-            au.email as artisan_email, au.first_name as artisan_first_name
-     FROM bookings b
-     JOIN services s ON b.service_id = s.id
-     JOIN users cu ON b.customer_id = cu.id
-     JOIN artisan_profiles ap ON b.artisan_id = ap.id
-     JOIN users au ON ap.user_id = au.id
-     WHERE b.id = $1`,
+           au.email as artisan_email, au.first_name as artisan_first_name
+    FROM bookings b
+    JOIN services s ON b.service_id = s.id
+    JOIN users cu ON b.customer_id = cu.id
+    JOIN artisan_profiles ap ON b.artisan_id = ap.id
+    JOIN users au ON ap.user_id = au.id
+    WHERE b.id = $1`,
     [bookingId]
   );
 
@@ -82,6 +98,28 @@ router.post('/', authMiddleware, customerMiddleware, async (req, res) => {
       title: 'New booking request',
       intro: 'A new booking request has been created. Please review and proceed.',
     });
+
+    const parties = await getBookingPartyUserIds(result.rows[0].id);
+    if (parties) {
+      await Promise.all([
+        createNotification(
+          parties.customer_id,
+          'booking',
+          'Booking created',
+          `Your booking request for ${parties.service_name} has been created.`,
+          parties.id,
+          'booking'
+        ),
+        createNotification(
+          parties.artisan_user_id,
+          'booking',
+          'New booking request',
+          `You have a new booking request for ${parties.service_name}.`,
+          parties.id,
+          'booking'
+        ),
+      ]);
+    }
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -203,6 +241,19 @@ router.patch('/:id/status', authMiddleware, artisanMiddleware, async (req, res) 
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    const parties = await getBookingPartyUserIds(result.rows[0].id);
+    if (parties) {
+      const statusLabel = status.replace('_', ' ');
+      await createNotification(
+        parties.customer_id,
+        'booking',
+        `Booking ${statusLabel}`,
+        `Your booking for ${parties.service_name} is now ${statusLabel}.`,
+        parties.id,
+        'booking'
+      );
+    }
+
     // Email: status updated
     const statusIntroMap = {
       confirmed: 'Your booking has been confirmed.',
@@ -237,6 +288,28 @@ router.patch('/:id/cancel', authMiddleware, customerMiddleware, async (req, res)
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found or cannot be cancelled' });
+    }
+
+    const parties = await getBookingPartyUserIds(result.rows[0].id);
+    if (parties) {
+      await Promise.all([
+        createNotification(
+          parties.customer_id,
+          'booking',
+          'Booking cancelled',
+          `Your booking for ${parties.service_name} has been cancelled.`,
+          parties.id,
+          'booking'
+        ),
+        createNotification(
+          parties.artisan_user_id,
+          'booking',
+          'Booking cancelled',
+          `A booking for ${parties.service_name} has been cancelled by the customer.`,
+          parties.id,
+          'booking'
+        ),
+      ]);
     }
 
     res.json(result.rows[0]);
@@ -292,6 +365,18 @@ router.post('/:id/review', authMiddleware, customerMiddleware, async (req, res) 
           total_reviews = (SELECT COUNT(*) FROM reviews WHERE artisan_id = $1)
       WHERE id = $1
     `, [booking.artisan_id]);
+
+    const parties = await getBookingPartyUserIds(booking.id);
+    if (parties) {
+      await createNotification(
+        parties.artisan_user_id,
+        'review',
+        'New review received',
+        `You received a new review for ${parties.service_name}.`,
+        reviewResult.rows[0].id,
+        'review'
+      );
+    }
 
     res.status(201).json(reviewResult.rows[0]);
   } catch (error) {

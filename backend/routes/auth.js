@@ -2,13 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Pool } = require('pg');
 const { sendEmail } = require('../utils/mailer');
 const { authMiddleware } = require('../middleware/auth');
 const { initializeWallet } = require('./wallet');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Register
 router.post('/register', async (req, res) => {

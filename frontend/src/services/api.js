@@ -163,4 +163,17 @@ export const searchAPI = {
   getArtisanStates: () => api.get('/artisans/meta/states'),
 };
 
+export const jobsAPI = {
+  list: (params) => api.get('/jobs', { params }),
+  getById: (id) => api.get(`/jobs/${id}`),
+  create: (data) => api.post('/jobs', data),
+  close: (id) => api.patch(`/jobs/${id}/close`),
+  apply: (id, data) => api.post(`/jobs/${id}/apply`, data),
+  getApplications: (id) => api.get(`/jobs/${id}/applications`),
+  my: () => api.get('/jobs/my'),
+  myApplications: () => api.get('/jobs/my-applications'),
+  updateApplicationStatus: (jobId, applicationId, status) =>
+    api.patch(`/jobs/${jobId}/applications/${applicationId}`, { status }),
+};
+
 export default api;

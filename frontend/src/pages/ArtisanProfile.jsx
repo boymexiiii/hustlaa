@@ -7,6 +7,7 @@ import PortfolioGallery from '../components/PortfolioGallery';
 import CertificationsSection from '../components/CertificationsSection';
 import ReviewsSection from '../components/ReviewsSection';
 import toast from 'react-hot-toast';
+import Footer from '../components/Footer';
 
 const ArtisanProfile = () => {
   const { id } = useParams();
@@ -299,6 +300,7 @@ const ArtisanProfile = () => {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 };

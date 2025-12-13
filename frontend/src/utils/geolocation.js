@@ -1,21 +1,64 @@
 // Geolocation utility functions
 
 export const getUserLocation = () => {
+  const requestPosition = (options) =>
+    new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          });
+        },
+        (error) => reject(error),
+        options
+      );
+    });
+
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error('Geolocation is not supported by your browser'));
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
-      },
-      (error) => {
+    if (window.isSecureContext === false) {
+      reject(new Error('Location requires a secure context (HTTPS). Use https:// or localhost.'));
+      return;
+    }
+
+    requestPosition({
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000, // 5 minutes
+    })
+      .then(resolve)
+      .catch((error) => {
+        if (error?.code === error.POSITION_UNAVAILABLE || error?.code === error.TIMEOUT) {
+          requestPosition({
+            enableHighAccuracy: false,
+            timeout: 20000,
+            maximumAge: 0,
+          })
+            .then(resolve)
+            .catch((fallbackError) => {
+              let errorMessage = 'Unable to retrieve your location. Please enable Location Services and try again.';
+              switch (fallbackError.code) {
+                case fallbackError.PERMISSION_DENIED:
+                  errorMessage = 'Location permission denied. Please enable location access for this site in your browser settings.';
+                  break;
+                case fallbackError.POSITION_UNAVAILABLE:
+                  errorMessage = 'Location information unavailable. Check that Location Services are enabled on your device, then try again.';
+                  break;
+                case fallbackError.TIMEOUT:
+                  errorMessage = 'Location request timed out. Try again, or use a different network/browser.';
+                  break;
+              }
+              reject(new Error(errorMessage));
+            });
+          return;
+        }
+
         let errorMessage = 'Unable to retrieve your location';
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -29,13 +72,7 @@ export const getUserLocation = () => {
             break;
         }
         reject(new Error(errorMessage));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // 5 minutes
-      }
-    );
+      });
   });
 };
 

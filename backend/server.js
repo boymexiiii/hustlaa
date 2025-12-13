@@ -5,16 +5,25 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 
 dotenv.config();
 
+const { createNotification } = require('./routes/notifications');
+
 const app = express();
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const pool = require('./db/pool');
 
 app.use(cors());
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const path = req.originalUrl || req.url;
+    console.log(`[api] ${req.method} ${path} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
 
 // Paystack webhook requires raw request body for signature verification
 app.use('/api/payments/webhook/paystack', express.raw({ type: 'application/json' }));
@@ -29,15 +38,25 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/artisans', require('./routes/artisans'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/search', require('./routes/search'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/messages', require('./routes/messages').router);
 app.use('/api/wallet', require('./routes/wallet').router);
+app.use('/api/notifications', require('./routes/notifications').router);
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK' });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  const path = req.originalUrl || req.url;
+  console.error(`[api] error ${req.method} ${path}`, err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 5000;
@@ -114,6 +133,15 @@ io.on('connection', (socket) => {
          VALUES ($1, $2, $3, $4)
          RETURNING id, booking_id, sender_user_id, receiver_user_id, body, created_at`,
         [bookingId, socket.user.id, receiverUserId, text]
+      );
+
+      await createNotification(
+        receiverUserId,
+        'message',
+        'New message',
+        'You have a new message in your booking chat.',
+        bookingId,
+        'booking'
       );
 
       io.to(`booking:${bookingId}`).emit('message', insert.rows[0]);

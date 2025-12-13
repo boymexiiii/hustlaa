@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, MapPin, Star, Filter, ChevronDown } from 'lucide-react';
 import { artisansAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import Footer from '../components/Footer';
 
 const ArtisanSearch = () => {
   const [searchParams] = useSearchParams();
@@ -237,6 +238,7 @@ const ArtisanSearch = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

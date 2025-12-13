@@ -1,9 +1,9 @@
 const express = require('express');
-const { Pool } = require('pg');
 const { authMiddleware, artisanMiddleware, customerMiddleware } = require('../middleware/auth');
+const { createNotification } = require('./notifications');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Get reviews for an artisan
 router.get('/artisan/:artisanId', async (req, res) => {
@@ -202,6 +202,15 @@ router.post('/:id/response', authMiddleware, artisanMiddleware, async (req, res)
          RETURNING *`,
         [response_text, id]
       );
+
+      await createNotification(
+        review.customer_id,
+        'review',
+        'Artisan responded to your review',
+        'The artisan has responded to your review.',
+        id,
+        'review'
+      );
       return res.json(result.rows[0]);
     }
 
@@ -211,6 +220,15 @@ router.post('/:id/response', authMiddleware, artisanMiddleware, async (req, res)
        VALUES ($1, $2, $3)
        RETURNING *`,
       [id, artisanId, response_text]
+    );
+
+    await createNotification(
+      review.customer_id,
+      'review',
+      'Artisan responded to your review',
+      'The artisan has responded to your review.',
+      id,
+      'review'
     );
 
     res.status(201).json(result.rows[0]);

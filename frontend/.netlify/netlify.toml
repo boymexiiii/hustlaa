@@ -1,0 +1,45 @@
+redirectsOrigin = "config"
+plugins = []
+headers = []
+
+[dev]
+command = "npm run dev"
+port = 3000.0
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "/Users/admin/Desktop/hustlaa/frontend/dist"
+publishOrigin = "config"
+commandOrigin = "config"
+base = "/Users/admin/Desktop/hustlaa/frontend"
+command = "npm run build"
+
+[build.environment]
+NODE_VERSION = "18"
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]

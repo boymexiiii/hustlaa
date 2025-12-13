@@ -8,10 +8,11 @@ CREATE TABLE IF NOT EXISTS portfolio_items (
   category VARCHAR(50), -- 'before_after', 'project', 'certificate'
   before_image_url VARCHAR(255), -- For before/after comparisons
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_artisan_id (artisan_id),
-  INDEX idx_category (category)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_portfolio_items_artisan_id ON portfolio_items(artisan_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_items_category ON portfolio_items(category);
 
 -- Create certifications table
 CREATE TABLE IF NOT EXISTS certifications (
@@ -24,17 +25,19 @@ CREATE TABLE IF NOT EXISTS certifications (
   credential_url VARCHAR(255),
   certificate_image_url VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_artisan_id (artisan_id),
-  INDEX idx_expiry_date (expiry_date)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_certifications_artisan_id ON certifications(artisan_id);
+CREATE INDEX IF NOT EXISTS idx_certifications_expiry_date ON certifications(expiry_date);
 
 -- Create portfolio_views table to track portfolio engagement
 CREATE TABLE IF NOT EXISTS portfolio_views (
   id SERIAL PRIMARY KEY,
   portfolio_item_id INTEGER NOT NULL REFERENCES portfolio_items(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_portfolio_item_id (portfolio_item_id),
-  INDEX idx_user_id (user_id)
+  viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_portfolio_views_portfolio_item_id ON portfolio_views(portfolio_item_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_views_user_id ON portfolio_views(user_id);

@@ -1,15 +1,31 @@
 const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
-const { Pool } = require('pg');
 const { authMiddleware, customerMiddleware } = require('../middleware/auth');
 const { sendEmail, bookingEmailTemplate } = require('../utils/mailer');
+const { createNotification } = require('./notifications');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
+
+async function getBookingPartyUserIds(bookingId) {
+  const r = await pool.query(
+    `SELECT b.id,
+            b.customer_id,
+            s.name AS service_name,
+            au.id AS artisan_user_id
+     FROM bookings b
+     JOIN services s ON b.service_id = s.id
+     JOIN artisan_profiles ap ON b.artisan_id = ap.id
+     JOIN users au ON ap.user_id = au.id
+     WHERE b.id = $1`,
+    [bookingId]
+  );
+  return r.rows[0] || null;
+}
 
 async function sendBookingEmailToParties({ bookingId, title, intro }) {
   const r = await pool.query(
@@ -172,6 +188,28 @@ router.post('/verify/:reference', authMiddleware, customerMiddleware, async (req
       intro: 'We have received your payment and your booking has been confirmed.',
     });
 
+    const parties = await getBookingPartyUserIds(payment.booking_id);
+    if (parties) {
+      await Promise.all([
+        createNotification(
+          parties.customer_id,
+          'payment',
+          'Payment successful',
+          `Your payment for ${parties.service_name} was successful. Booking is confirmed.`,
+          payment.id,
+          'payment'
+        ),
+        createNotification(
+          parties.artisan_user_id,
+          'payment',
+          'Payment received',
+          `Payment received for ${parties.service_name}. Booking is confirmed.`,
+          payment.id,
+          'payment'
+        ),
+      ]);
+    }
+
     res.json({
       success: true,
       message: 'Payment verified successfully',
@@ -226,6 +264,30 @@ router.post('/webhook/paystack', async (req, res) => {
       title: 'Payment received — booking confirmed',
       intro: 'We have received your payment and your booking has been confirmed.',
     });
+
+    const paymentRow = await pool.query('SELECT id FROM payments WHERE transaction_id = $1', [reference]);
+    const paymentId = paymentRow.rows[0]?.id || null;
+    const parties = await getBookingPartyUserIds(bookingId);
+    if (parties) {
+      await Promise.all([
+        createNotification(
+          parties.customer_id,
+          'payment',
+          'Payment successful',
+          `Your payment for ${parties.service_name} was successful. Booking is confirmed.`,
+          paymentId,
+          'payment'
+        ),
+        createNotification(
+          parties.artisan_user_id,
+          'payment',
+          'Payment received',
+          `Payment received for ${parties.service_name}. Booking is confirmed.`,
+          paymentId,
+          'payment'
+        ),
+      ]);
+    }
 
     return res.status(200).send('ok');
   } catch (error) {

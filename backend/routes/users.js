@@ -1,10 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
 const { authMiddleware } = require('../middleware/auth');
+const pool = require('../db/pool');
 
 const router = express.Router();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Update user profile
 router.put('/profile', authMiddleware, async (req, res) => {

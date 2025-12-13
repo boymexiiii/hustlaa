@@ -5,10 +5,11 @@ CREATE TABLE IF NOT EXISTS search_history (
   search_query VARCHAR(255),
   filters JSONB, -- Store filter criteria as JSON
   results_count INTEGER,
-  searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_id (user_id),
-  INDEX idx_searched_at (searched_at)
+  searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_search_history_user_id ON search_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_search_history_searched_at ON search_history(searched_at);
 
 -- Create saved_searches table
 CREATE TABLE IF NOT EXISTS saved_searches (
@@ -18,9 +19,10 @@ CREATE TABLE IF NOT EXISTS saved_searches (
   search_query VARCHAR(255),
   filters JSONB, -- Store filter criteria as JSON
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_id (user_id)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_saved_searches_user_id ON saved_searches(user_id);
 
 -- Create service_categories table for better organization
 CREATE TABLE IF NOT EXISTS service_categories (
