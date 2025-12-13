@@ -9,6 +9,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check - must come first
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK' });
+});
+
 // Routes
 try {
   app.use('/auth', require('../../backend/routes/auth'));
@@ -26,15 +31,6 @@ try {
 } catch (error) {
   console.error('Error loading routes:', error);
 }
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
 
 // Root endpoint
 app.get('/', (req, res) => {
